@@ -4,7 +4,6 @@
 #import "../Diagnostics/EHDiagnostics.h"
 
 @interface EHHomeViewController ()
-@property (nonatomic, strong) UIStackView *contentStack;
 @end
 
 @implementation EHHomeViewController
