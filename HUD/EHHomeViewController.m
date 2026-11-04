@@ -17,7 +17,30 @@
     self.view.backgroundColor = [UIColor colorWithRed:0.055 green:0.065 blue:0.09 alpha:1.0];
     [self buildInterface];
     self.floatingHUD = [[EHFloatingHUDView alloc] initWithFrame:CGRectMake(0, 0, 200, 38)];
+    __weak EHHomeViewController *weakSelf = self;
+    self.floatingHUD.onSectionSelected = ^(EHMenuSection section) {
+        [weakSelf updateFloatingHUDForSection:section];
+    };
     [self.view addSubview:self.floatingHUD];
+}
+
+- (void)updateFloatingHUDForSection:(EHMenuSection)section {
+    EHDeviceInfo *device = EHDeviceInfo.currentInfo;
+    switch (section) {
+        case EHMenuSectionEnvironment:
+            [self.floatingHUD setDetailsText:[NSString stringWithFormat:@"%@ · %@\niOS %@ · %@", device.machineIdentifier, device.architecture, device.osVersion, device.buildVersion]];
+            break;
+        case EHMenuSectionCapabilities:
+            [self.floatingHUD setDetailsText:@"KERNEL · NOT INTEGRATED\nPAC / PPL · NOT INTEGRATED"];
+            break;
+        case EHMenuSectionDiagnostics: {
+            NSDictionary *snapshot = EHDiagnostics.snapshot;
+            NSString *memory = snapshot[@"App memory footprint"] ?: @"Unavailable";
+            NSString *uptime = snapshot[@"System uptime"] ?: @"Unavailable";
+            [self.floatingHUD setDetailsText:[NSString stringWithFormat:@"APP MEMORY · %@\nSYSTEM UPTIME · %@", memory, uptime]];
+            break;
+        }
+    }
 }
 
 - (void)viewDidLayoutSubviews {

@@ -4,6 +4,7 @@
 @property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) UILabel *detailsLabel;
 @property (nonatomic, strong) UIButton *toggleButton;
+@property (nonatomic, copy) NSArray<UIButton *> *sectionButtons;
 @end
 
 @implementation EHFloatingHUDView
@@ -11,7 +12,7 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor = [UIColor colorWithRed:0.10 green:0.13 blue:0.19 alpha:0.96];
+        self.backgroundColor = [UIColor colorWithRed:0.10 green:0.13 blue:0.19 alpha:0.97];
         self.layer.cornerRadius = 19.0;
         self.layer.borderWidth = 1.0;
         self.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.16].CGColor;
@@ -43,14 +44,31 @@
         [_toggleButton addTarget:self action:@selector(toggleExpanded) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_toggleButton];
 
-        _detailsLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 43, 176, 42)];
-        _detailsLabel.text = @"LOCAL HUD · APP ONLY\nKernel / PAC / PPL: not integrated";
+        _detailsLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 42, 176, 46)];
+        _detailsLabel.text = @"LOCAL HUD · APP ONLY\nChoose a section below";
         _detailsLabel.font = [UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
-        _detailsLabel.textColor = [UIColor colorWithWhite:0.84 alpha:1];
+        _detailsLabel.textColor = [UIColor colorWithWhite:0.86 alpha:1];
         _detailsLabel.numberOfLines = 2;
         _detailsLabel.hidden = YES;
         [self addSubview:_detailsLabel];
 
+        NSArray<NSString *> *titles = @[@"DEVICE", @"CAPS", @"DIAG"];
+        NSMutableArray<UIButton *> *buttons = [NSMutableArray arrayWithCapacity:titles.count];
+        for (NSUInteger index = 0; index < titles.count; index++) {
+            UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+            button.frame = CGRectMake(8 + (CGFloat)index * 64, 94, 56, 27);
+            button.tag = (NSInteger)index;
+            button.layer.cornerRadius = 7;
+            button.backgroundColor = [UIColor colorWithWhite:1 alpha:0.11];
+            [button setTitle:titles[index] forState:UIControlStateNormal];
+            [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+            button.titleLabel.font = [UIFont systemFontOfSize:9 weight:UIFontWeightBold];
+            [button addTarget:self action:@selector(selectSection:) forControlEvents:UIControlEventTouchUpInside];
+            button.hidden = YES;
+            [self addSubview:button];
+            [buttons addObject:button];
+        }
+        _sectionButtons = [buttons copy];
         self.expanded = NO;
     }
     return self;
@@ -58,15 +76,28 @@
 
 - (void)setExpanded:(BOOL)expanded {
     _expanded = expanded;
-    self.frame = (CGRect){self.frame.origin, CGSizeMake(200, expanded ? 94 : 38)};
+    self.frame = (CGRect){self.frame.origin, CGSizeMake(200, expanded ? 130 : 38)};
     self.layer.cornerRadius = expanded ? 15.0 : 19.0;
     self.detailsLabel.hidden = !expanded;
+    for (UIButton *button in self.sectionButtons) {
+        button.hidden = !expanded;
+    }
     [self.toggleButton setTitle:(expanded ? @"−" : @"+") forState:UIControlStateNormal];
     self.accessibilityValue = expanded ? @"Expanded" : @"Collapsed";
 }
 
+- (void)setDetailsText:(NSString *)text {
+    self.detailsLabel.text = text.length > 180 ? [[text substringToIndex:177] stringByAppendingString:@"…"] : text;
+}
+
 - (void)toggleExpanded {
     self.expanded = !self.isExpanded;
+}
+
+- (void)selectSection:(UIButton *)sender {
+    if (self.onSectionSelected) {
+        self.onSectionSelected((EHMenuSection)sender.tag);
+    }
 }
 
 - (void)handlePan:(UIPanGestureRecognizer *)gesture {
