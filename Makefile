@@ -12,6 +12,7 @@ ExternalHUD_FILES := main.m \
 	HUD/EHHomeViewController.m \
 	HUD/EHFloatingHUDView.m \
 	System/EHDeviceInfo.m \
+	System/EHCompatibility.m \
 	Capabilities/EHCapabilityRegistry.m \
 	Diagnostics/EHDiagnostics.m
 
