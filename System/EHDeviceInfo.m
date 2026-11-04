@@ -1,5 +1,6 @@
 #import "EHDeviceInfo.h"
 #import <sys/sysctl.h>
+#import <stdlib.h>
 
 @implementation EHDeviceInfo
 
