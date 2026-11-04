@@ -10,6 +10,7 @@ APPLICATION_NAME := ExternalHUD
 ExternalHUD_FILES := main.m \
 	Application/EHAppDelegate.m \
 	HUD/EHHomeViewController.m \
+	HUD/EHFloatingHUDView.m \
 	System/EHDeviceInfo.m \
 	Capabilities/EHCapabilityRegistry.m \
 	Diagnostics/EHDiagnostics.m
