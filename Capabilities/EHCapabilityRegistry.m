@@ -13,14 +13,14 @@
 @end
 
 @implementation EHCapabilityRegistry
-
 + (NSArray<EHCapabilityDescriptor *> *)descriptors {
-    // Metadata only: no exploit payloads, bypass routines, or kernel interaction.
+    // Reference catalog only. These labels do not imply executable support or compatibility.
     return @[
-        [[EHCapabilityDescriptor alloc] initWithName:@"Kernel" details:@"No kernel backend integrated. Compatibility is not yet validated." state:EHCapabilityStateNotIntegrated],
-        [[EHCapabilityDescriptor alloc] initWithName:@"PAC" details:@"No PAC component integrated. Status is intentionally not inferred from device model." state:EHCapabilityStateNotIntegrated],
-        [[EHCapabilityDescriptor alloc] initWithName:@"PPL" details:@"No PPL component integrated. Status is intentionally not inferred from iOS version." state:EHCapabilityStateNotIntegrated]
+        [[EHCapabilityDescriptor alloc] initWithName:@"Kernel" details:@"Kernel capability layer. No backend integrated." state:EHCapabilityStateNotIntegrated],
+        [[EHCapabilityDescriptor alloc] initWithName:@"KFD" details:@"Kernel exploit research reference only; no payload or supported-build claims." state:EHCapabilityStateNotIntegrated],
+        [[EHCapabilityDescriptor alloc] initWithName:@"DarkSword" details:@"Kernel exploit research reference only; no payload or supported-build claims." state:EHCapabilityStateNotIntegrated],
+        [[EHCapabilityDescriptor alloc] initWithName:@"PAC" details:@"Separate pointer-authentication capability layer. No component integrated." state:EHCapabilityStateNotIntegrated],
+        [[EHCapabilityDescriptor alloc] initWithName:@"PPL" details:@"Separate page-protection-layer capability. No component integrated." state:EHCapabilityStateNotIntegrated]
     ];
 }
-
 @end

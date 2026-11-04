@@ -20,6 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate project invariants
+        run: python3 Scripts/validate_project.py
+
+      - name: Cache Theos and SDKs
+        uses: actions/cache@v4
+        with:
+          path: theos
+          key: theos-${{ runner.os }}-sdk-master-v1
+
       - name: Set up Theos
         uses: Randomblock1/theos-action@v1.5
 
