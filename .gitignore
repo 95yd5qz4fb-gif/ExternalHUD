@@ -1,0 +1,13 @@
+# Theos build output
+.packages/
+.theos/
+obj/
+packages/
+.deb
+.ipa
+.tipa
+
+# Xcode / macOS
+DerivedData/
+*.xcuserstate
+.DS_Store
