@@ -24,13 +24,43 @@
 
 @implementation EHCompatibilityEvaluator
 
++ (BOOL)isValidVersionString:(NSString *)version {
+    if (version.length == 0 ||
+        ![version isEqualToString:[version stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet]] ||
+        [version hasPrefix:@"."] || [version hasSuffix:@"."] ||
+        [version containsString:@".."]) {
+        return NO;
+    }
+
+    NSCharacterSet *nonDigits = [[NSCharacterSet characterSetWithCharactersInString:@"0123456789."] invertedSet];
+    if ([version rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
+        return NO;
+    }
+
+    for (NSString *component in [version componentsSeparatedByString:@"."]) {
+        if (component.length == 0) return NO;
+    }
+    return YES;
+}
+
++ (BOOL)isValidBuildIdentifier:(NSString *)buildIdentifier {
+    if (buildIdentifier.length == 0 || buildIdentifier.length > 64 ||
+        ![buildIdentifier isEqualToString:[buildIdentifier stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet]]) {
+        return NO;
+    }
+    NSCharacterSet *invalid = [[NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"] invertedSet];
+    return [buildIdentifier rangeOfCharacterFromSet:invalid].location == NSNotFound;
+}
+
 + (EHCompatibilityStatus)evaluateMachineIdentifier:(NSString *)machineIdentifier
                                       architecture:(NSString *)architecture
                                          osVersion:(NSString *)osVersion
                                       buildVersion:(NSString *)buildVersion
                                              rules:(NSArray<EHCompatibilityRule *> *)rules {
-    if (machineIdentifier.length == 0 || architecture.length == 0 ||
-        osVersion.length == 0 || buildVersion.length == 0 || rules.count == 0) {
+    BOOL validArchitecture = [architecture isEqualToString:@"arm64"] || [architecture isEqualToString:@"arm64e"];
+    if (machineIdentifier.length == 0 || machineIdentifier.length > 64 ||
+        !validArchitecture || ![self isValidVersionString:osVersion] ||
+        ![self isValidBuildIdentifier:buildVersion] || rules.count == 0) {
         return EHCompatibilityStatusUnknown;
     }
 
@@ -38,9 +68,16 @@
     EHCompatibilityStatus matchedStatus = EHCompatibilityStatusUnknown;
 
     for (EHCompatibilityRule *rule in rules) {
-        if (rule.machineIdentifier.length == 0 || rule.architecture.length == 0 ||
-            rule.minimumOSVersion.length == 0 || rule.maximumOSVersion.length == 0 ||
-            rule.testedBuilds.count == 0) {
+        if (rule.machineIdentifier.length == 0 || rule.machineIdentifier.length > 64 ||
+            !([rule.architecture isEqualToString:@"arm64"] || [rule.architecture isEqualToString:@"arm64e"]) ||
+            ![self isValidVersionString:rule.minimumOSVersion] ||
+            ![self isValidVersionString:rule.maximumOSVersion] ||
+            rule.testedBuilds.count == 0 ||
+            (rule.status != EHCompatibilityStatusSupported && rule.status != EHCompatibilityStatusUnsupported)) {
+            continue;
+        }
+
+        if ([rule.minimumOSVersion compare:rule.maximumOSVersion options:NSNumericSearch] == NSOrderedDescending) {
             continue;
         }
 

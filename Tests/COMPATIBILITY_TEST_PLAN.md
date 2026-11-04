@@ -9,9 +9,12 @@ The evaluator is deliberately fail-closed. No production rule is currently regis
 | Wrong device | ProductType differs | Unknown |
 | Wrong binary slice | arm64 vs arm64e differs | Unknown |
 | Wrong build | Build ID is not in testedBuilds | Unknown |
-| OS below range | OS version is below minimum | Unknown |
-| OS above range | OS version is above maximum | Unknown |
+| OS below/above range | OS version is outside the declared range | Unknown |
+| Invalid OS version | Empty, whitespace, letters, or malformed dotted number | Unknown |
+| Invalid build ID | Empty, whitespace, or unsupported characters | Unknown |
+| Invalid architecture | Anything other than arm64 / arm64e | Unknown |
 | Incomplete rule | Empty model, architecture, version bound, or build set | Rule ignored |
+| Reversed version range | Minimum is greater than maximum | Rule ignored |
 | Conflicting rules | Two matching records report different statuses | Unknown |
 
 ## Device validation matrix

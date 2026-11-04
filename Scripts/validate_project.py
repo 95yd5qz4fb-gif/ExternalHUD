@@ -49,12 +49,15 @@ require("actions/upload-artifact@v4" in workflow and "packages/*.deb" in workflo
         "CI must upload the generated Debian package.")
 
 compat = (ROOT / "System/EHCompatibility.m").read_text(encoding="utf-8")
-require("rule.testedBuilds.count == 0" in compat,
-        "Compatibility rules must require a non-empty tested-build set.")
-require("[rule.testedBuilds containsObject:buildVersion]" in compat,
-        "Compatibility evaluation must require an exact build match.")
-require("return EHCompatibilityStatusUnknown;" in compat,
-        "Unknown compatibility must fail closed.")
+for invariant in (
+    "rule.testedBuilds.count == 0",
+    "[rule.testedBuilds containsObject:buildVersion]",
+    "isValidVersionString:",
+    "isValidBuildIdentifier:",
+    "NSOrderedDescending",
+    "return EHCompatibilityStatusUnknown;",
+):
+    require(invariant in compat, f"Compatibility invariant missing: {invariant}")
 
 # Initial product scope: no cross-process task acquisition or VM read/write APIs.
 blocked_apis = re.compile(
