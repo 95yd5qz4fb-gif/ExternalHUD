@@ -16,6 +16,7 @@ ExternalHUD_FILES := main.m \
 
 ExternalHUD_FRAMEWORKS := UIKit Foundation QuartzCore
 ExternalHUD_CFLAGS := -fobjc-arc -Wall -Wextra
+ExternalHUD_BUNDLE_IDENTIFIER := com.gira983.externalhud
 ExternalHUD_INSTALL_PATH := /Applications
 
 include $(THEOS_MAKE_PATH)/application.mk
