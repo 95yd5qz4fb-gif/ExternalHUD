@@ -1,4 +1,5 @@
 #import "EHDeviceInfo.h"
+#import <UIKit/UIKit.h>
 #import <sys/sysctl.h>
 #import <stdlib.h>
 
