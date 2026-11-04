@@ -1,0 +1,9 @@
+Package: com.gira983.externalhud
+Name: ExternalHUD
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Description: Device-aware HUD and local diagnostics application.
+Maintainer: 95yd5qz4fb-gif
+Author: 95yd5qz4fb-gif
+Section: Applications
+Priority: optional
