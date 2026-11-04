@@ -1,5 +1,6 @@
 #import "EHHomeViewController.h"
 #import "../System/EHDeviceInfo.h"
+#import "../System/EHCompatibility.h"
 #import "../Capabilities/EHCapabilityRegistry.h"
 #import "../Diagnostics/EHDiagnostics.h"
 #import "EHFloatingHUDView.h"
@@ -95,7 +96,8 @@
     NSArray *deviceRows = @[
         [NSString stringWithFormat:@"Device: %@", device.machineIdentifier],
         [NSString stringWithFormat:@"iOS: %@ (build %@)", device.osVersion, device.buildVersion],
-        [NSString stringWithFormat:@"Architecture: %@", device.architecture],
+        [NSString stringWithFormat:@"Binary slice: %@", device.architecture],
+        [NSString stringWithFormat:@"Compatibility: %@", [EHCompatibilityEvaluator displayNameForStatus:[EHCompatibilityEvaluator evaluateMachineIdentifier:device.machineIdentifier architecture:device.architecture osVersion:device.osVersion buildVersion:device.buildVersion rules:@[]]]],
         [NSString stringWithFormat:@"App: %@", device.appVersion]
     ];
     [stack addArrangedSubview:[self cardWithTitle:@"DEVICE ENVIRONMENT" rows:deviceRows]];
