@@ -1,0 +1,35 @@
+name: Build ExternalHUD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: externalhud-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Theos
+        uses: Randomblock1/theos-action@v1.5
+
+      - name: Build package
+        run: make package FINALPACKAGE=1
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExternalHUD-${{ github.sha }}
+          path: packages/*.deb
+          if-no-files-found: error
+          retention-days: 14
