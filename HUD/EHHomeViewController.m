@@ -2,8 +2,11 @@
 #import "../System/EHDeviceInfo.h"
 #import "../Capabilities/EHCapabilityRegistry.h"
 #import "../Diagnostics/EHDiagnostics.h"
+#import "EHFloatingHUDView.h"
 
 @interface EHHomeViewController ()
+@property (nonatomic, strong) EHFloatingHUDView *floatingHUD;
+@property (nonatomic, assign) BOOL didPositionFloatingHUD;
 @end
 
 @implementation EHHomeViewController
@@ -12,6 +15,18 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor colorWithRed:0.055 green:0.065 blue:0.09 alpha:1.0];
     [self buildInterface];
+    self.floatingHUD = [[EHFloatingHUDView alloc] initWithFrame:CGRectMake(0, 0, 200, 38)];
+    [self.view addSubview:self.floatingHUD];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    if (!self.didPositionFloatingHUD && self.floatingHUD) {
+        CGFloat x = MAX(12.0, CGRectGetWidth(self.view.bounds) - 212.0);
+        CGFloat y = MAX(20.0, CGRectGetHeight(self.view.bounds) - 126.0);
+        self.floatingHUD.frame = CGRectMake(x, y, 200, 38);
+        self.didPositionFloatingHUD = YES;
+    }
 }
 
 - (UILabel *)label:(NSString *)text size:(CGFloat)size weight:(UIFontWeight)weight color:(UIColor *)color {
