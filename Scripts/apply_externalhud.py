@@ -65,8 +65,8 @@ if "EHProcessListViewController" not in src:
     for (int i = 0; i < actual; i++) {
         pid_t pid = pids[i];
         if (pid <= 0) continue;
-        char nameBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
-        char pathBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
+        char nameBuffer[256] = {0};
+        char pathBuffer[4096] = {0};
         proc_name(pid, nameBuffer, sizeof(nameBuffer));
         proc_pidpath(pid, pathBuffer, sizeof(pathBuffer));
         EHProcessItem *item = [EHProcessItem new];
@@ -138,7 +138,7 @@ if "EHProcessListViewController" not in src:
         }],
 '''
     if action_marker not in src: raise SystemExit("Dopamine action menu insertion point not found")
-    src = src.replace(action_marker, action + action_marker, 1)
+    src = src.replace(action_marker, ",\\n" + action + action_marker, 1)
     MAIN.write_text(src)
 
 ent = ENT.read_text()
