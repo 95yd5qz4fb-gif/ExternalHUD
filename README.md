@@ -1,35 +1,31 @@
 # ExternalHUD
 
-ExternalHUD is a standalone iOS application. GitHub Actions produces an **IPA** (standard Payload/ExternalHUD.app layout), not a tweak package.
+Standalone iOS application. CI packages the app as an **IPA** using the standard `Payload/ExternalHUD.app` structure.
 
-## Current app modules
+## Modules currently present
 
-- UIKit application shell and draggable floating HUD.
+- UIKit app shell and draggable floating HUD.
 - Device, OS, build, and binary-slice detection.
 - Fail-closed compatibility evaluator.
-- Capability catalog with distinct Kernel, KFD, DarkSword, PAC, and PPL entries.
+- Kernel/KFD/DarkSword/PAC/PPL capability catalog.
 - Local diagnostics.
-- Process session manager with an explicitly self-only first backend.
+- Process session manager; the currently implemented backend is self-process only.
 
 ## Process integration status
 
-The Process Center currently creates and validates a session for ExternalHUD's own process. It does **not** enumerate or attach to other apps. External-process discovery and a kernel-backed attachment backend remain unimplemented; the UI reports this as unavailable rather than pretending a connection succeeded. The process manager is separated from the UI so a future, independently validated backend can be added without rewriting the HUD.
+The Process Center currently creates a session for ExternalHUD's own process. It does not enumerate or attach to other apps. External-process discovery and a kernel-backed attachment backend are not implemented yet. The UI reports this honestly instead of claiming a successful connection. The manager is isolated from the UI so an authorized, validated backend can be integrated separately.
 
-## Build
+## Build and artifact
 
-Requires macOS, Xcode command-line tools, Theos, and an iPhoneOS SDK.
-
-    make stage FINALPACKAGE=1
-
-GitHub Actions stages the app, packages `Payload/ExternalHUD.app` into `ExternalHUD.ipa`, and uploads the IPA artifact. The workflow does not sign the IPA. Installation/signing depends on the target device and installation method.
+The GitHub Actions workflow runs `make stage FINALPACKAGE=1`, verifies the staged app's Info.plist and bundle identifier, packages `Payload/ExternalHUD.app` into `ExternalHUD.ipa`, checks the ZIP archive, and uploads the IPA. The workflow does not sign the app.
 
 ## Compatibility
 
-Unknown device/build combinations remain untested. A compatibility result requires exact hardware identifier, binary slice, supported OS range, and exact tested build membership. CI success proves compile/package only, not runtime support on physical devices.
+Unknown device/build combinations remain untested. A compatibility result requires exact hardware identifier, binary slice, supported OS range, and exact tested build membership. CI success proves compilation and packaging, not physical-device runtime support.
 
 ## Security and correctness
 
 - No kernel exploit payloads or PAC/PPL bypass code are bundled.
 - No arbitrary task-port acquisition or cross-process memory operations are performed.
-- A process session is never reported as attached unless the current app's own task is the target.
-- Capability metadata is descriptive and is not proof of a working backend.
+- A session is reported as attached only for ExternalHUD's own process.
+- Capability metadata is descriptive, not proof of a working backend.

@@ -9,13 +9,10 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: externalhud-build-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,23 +27,34 @@ jobs:
         uses: Randomblock1/theos-action@v1.5
       - name: Build and stage iOS app
         run: make stage FINALPACKAGE=1
-      - name: Package IPA
+      - name: Locate staged app
+        id: app
         shell: bash
         run: |
           set -euo pipefail
           APP_PATH="$(find .theos -type d -name 'ExternalHUD.app' -print -quit)"
           if [ -z "$APP_PATH" ] || [ ! -f "$APP_PATH/Info.plist" ]; then
-            echo "ExternalHUD.app or its Info.plist was not produced by Theos staging."
-            find .theos -maxdepth 6 -print || true
+            echo "Theos did not stage ExternalHUD.app with an Info.plist."
+            find .theos -maxdepth 7 -print || true
             exit 1
           fi
+          echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"
+      - name: Package and verify IPA
+        shell: bash
+        env:
+          APP_PATH: ${{ steps.app.outputs.app_path }}
+        run: |
+          set -euo pipefail
           mkdir -p dist/Payload
           ditto "$APP_PATH" dist/Payload/ExternalHUD.app
+          plutil -lint dist/Payload/ExternalHUD.app/Info.plist
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' dist/Payload/ExternalHUD.app/Info.plist)
+          test "$BUNDLE_ID" = "com.gira983.externalhud"
           cd dist
           /usr/bin/zip -qry ExternalHUD.ipa Payload
+          /usr/bin/unzip -t ExternalHUD.ipa
           test -s ExternalHUD.ipa
-          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Payload/ExternalHUD.app/Info.plist
-          echo "IPA created: $(pwd)/ExternalHUD.ipa"
+          echo "IPA verified: $(pwd)/ExternalHUD.ipa"
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
