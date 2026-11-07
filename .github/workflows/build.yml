@@ -49,7 +49,7 @@ jobs:
           bash install-theos.sh
           curl -L https://github.com/theos/sdks/releases/latest/download/iPhoneOS16.5.sdk.tar.xz -o "$THEOS/sdks/iPhoneOS16.5.sdk.tar.xz"
           gunzip "$THEOS/sdks/iPhoneOS16.5.sdk.tar.xz"
-          tar -xf "$THEOS/sdks/iPhoneOS16.5.sdk.tar -C "$THEOS/sdks"
+          tar -xf "$THEOS/sdks/iPhoneOS16.5.sdk.tar" -C "$THEOS/sdks"
           rm "$THEOS/sdks/iPhoneOS16.5.sdk.tar"
 
       - name: Build trustcache utility
