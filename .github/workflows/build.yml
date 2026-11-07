@@ -32,10 +32,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APP_PATH="$(find .theos -type d -name 'ExternalHUD.app' -print -quit)"
+          APP_PATH=".theos/_/Applications/ExternalHUD.app"
           if [ -z "$APP_PATH" ] || [ ! -f "$APP_PATH/Info.plist" ]; then
             echo "Theos did not stage ExternalHUD.app with an Info.plist."
-            find .theos -maxdepth 7 -print || true
+            find .theos/_ -maxdepth 7 -print || true
             exit 1
           fi
           echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"

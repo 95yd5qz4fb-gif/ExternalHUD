@@ -30,6 +30,8 @@ require("make stage FINALPACKAGE=1" in workflow, "CI must stage an iOS app, not 
 require("Payload/ExternalHUD.app" in workflow and "ExternalHUD.ipa" in workflow,
         "CI must package the app in the standard IPA Payload layout.")
 require("path: dist/ExternalHUD.ipa" in workflow, "CI must upload the IPA.")
+require((ROOT / "Resources/Info.plist").is_file(), "Application Info.plist is missing.")
+require('.theos/_/Applications/ExternalHUD.app' in workflow, "CI must locate Theos' staged application bundle.")
 require("packages/*.deb" not in workflow, "The artifact must not be a .deb.")
 require("python3 Scripts/validate_project.py" in workflow, "CI must run project validation.")
 require("actions/upload-artifact@v4" in workflow, "CI must upload the IPA artifact.")
