@@ -29,3 +29,7 @@ Unknown device/build combinations remain untested. A compatibility result requir
 - No arbitrary task-port acquisition or cross-process memory operations are performed.
 - A session is reported as attached only for ExternalHUD's own process.
 - Capability metadata is descriptive, not proof of a working backend.
+
+## Public CI
+
+This repository is public. The IPA workflow uses public GitHub Actions and does not require a repository secret for the current unsigned build.
