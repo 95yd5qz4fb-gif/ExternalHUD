@@ -3,11 +3,13 @@
 #import "../System/EHCompatibility.h"
 #import "../Capabilities/EHCapabilityRegistry.h"
 #import "../Diagnostics/EHDiagnostics.h"
+#import "../Process/EHProcessManager.h"
 #import "EHFloatingHUDView.h"
 
 @interface EHHomeViewController ()
 @property (nonatomic, strong) EHFloatingHUDView *floatingHUD;
 @property (nonatomic, assign) BOOL didPositionFloatingHUD;
+@property (nonatomic, strong) UILabel *processStatusLabel;
 @end
 
 @implementation EHHomeViewController
@@ -27,6 +29,12 @@
 - (void)updateFloatingHUDForSection:(EHMenuSection)section {
     EHDeviceInfo *device = EHDeviceInfo.currentInfo;
     switch (section) {
+        case EHMenuSectionProcesses: {
+            EHProcessTarget *target = EHProcessManager.currentProcess;
+            EHProcessSession *session = [EHProcessManager attachToTarget:target];
+            [self.floatingHUD setDetailsText:[NSString stringWithFormat:@"PID %d · %@\n%@", target.processIdentifier, target.processName, session.detail]];
+            break;
+        }
         case EHMenuSectionEnvironment:
             [self.floatingHUD setDetailsText:[NSString stringWithFormat:@"%@ · %@\niOS %@ · %@", device.machineIdentifier, device.architecture, device.osVersion, device.buildVersion]];
             break;
@@ -69,7 +77,7 @@
     card.layer.borderWidth = 1;
     card.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.09].CGColor;
 
-    UIStackView *stack = [[UIStackView alloc] init];
+    UIStackView *stack = [UIStackView new];
     stack.axis = UILayoutConstraintAxisVertical;
     stack.spacing = 9;
     stack.translatesAutoresizingMaskIntoConstraints = NO;
@@ -114,7 +122,7 @@
 
     EHDeviceInfo *device = EHDeviceInfo.currentInfo;
     [stack addArrangedSubview:[self label:@"EXTERNAL HUD" size:25 weight:UIFontWeightBold color:UIColor.whiteColor]];
-    [stack addArrangedSubview:[self label:@"Environment · capabilities · diagnostics" size:13 weight:UIFontWeightRegular color:[UIColor colorWithWhite:0.65 alpha:1]]];
+    [stack addArrangedSubview:[self label:@"Process sessions · environment · capability modules" size:13 weight:UIFontWeightRegular color:[UIColor colorWithWhite:0.65 alpha:1]]];
 
     NSArray *deviceRows = @[
         [NSString stringWithFormat:@"Device: %@", device.machineIdentifier],
@@ -124,6 +132,16 @@
         [NSString stringWithFormat:@"App: %@", device.appVersion]
     ];
     [stack addArrangedSubview:[self cardWithTitle:@"DEVICE ENVIRONMENT" rows:deviceRows]];
+
+    EHProcessTarget *current = EHProcessManager.currentProcess;
+    EHProcessSession *session = [EHProcessManager attachToTarget:current];
+    [stack addArrangedSubview:[self cardWithTitle:@"PROCESS SESSION" rows:@[
+        [NSString stringWithFormat:@"Current process: %@ (PID %d)", current.processName, current.processIdentifier],
+        [NSString stringWithFormat:@"Bundle: %@", current.bundleIdentifier],
+        [NSString stringWithFormat:@"Session: %@", [EHProcessManager displayNameForStatus:session.status]],
+        session.detail,
+        @"External process discovery and kernel-backed attachment are not yet implemented."
+    ]]];
 
     NSMutableArray *capabilityRows = [NSMutableArray array];
     for (EHCapabilityDescriptor *item in EHCapabilityRegistry.descriptors) {
@@ -138,7 +156,7 @@
     }
     [stack addArrangedSubview:[self cardWithTitle:@"LOCAL DIAGNOSTICS" rows:diagnosticRows]];
 
-    [stack addArrangedSubview:[self label:@"Compatibility is reported as unknown until an exact device + iOS build combination has been tested. No kernel or process-memory operations are performed." size:11 weight:UIFontWeightRegular color:[UIColor colorWithWhite:0.58 alpha:1]]];
+    [stack addArrangedSubview:[self label:@"Process session currently validates only ExternalHUD's own task. Compatibility remains UNTESTED until an exact device + iOS build combination has been verified on hardware." size:11 weight:UIFontWeightRegular color:[UIColor colorWithWhite:0.58 alpha:1]]];
 }
 
 @end

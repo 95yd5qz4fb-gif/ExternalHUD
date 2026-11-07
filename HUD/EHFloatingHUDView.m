@@ -45,24 +45,24 @@
         [self addSubview:_toggleButton];
 
         _detailsLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 42, 176, 46)];
-        _detailsLabel.text = @"LOCAL HUD · APP ONLY\nChoose a section below";
+        _detailsLabel.text = @"PROCESS SESSION\nChoose a section below";
         _detailsLabel.font = [UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
         _detailsLabel.textColor = [UIColor colorWithWhite:0.86 alpha:1];
         _detailsLabel.numberOfLines = 2;
         _detailsLabel.hidden = YES;
         [self addSubview:_detailsLabel];
 
-        NSArray<NSString *> *titles = @[@"DEVICE", @"CAPS", @"DIAG"];
+        NSArray<NSString *> *titles = @[@"PROC", @"DEVICE", @"CAPS", @"DIAG"];
         NSMutableArray<UIButton *> *buttons = [NSMutableArray arrayWithCapacity:titles.count];
         for (NSUInteger index = 0; index < titles.count; index++) {
             UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-            button.frame = CGRectMake(8 + (CGFloat)index * 64, 94, 56, 27);
+            button.frame = CGRectMake(7 + (CGFloat)index * 48, 94, 43, 27);
             button.tag = (NSInteger)index;
             button.layer.cornerRadius = 7;
             button.backgroundColor = [UIColor colorWithWhite:1 alpha:0.11];
             [button setTitle:titles[index] forState:UIControlStateNormal];
             [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
-            button.titleLabel.font = [UIFont systemFontOfSize:9 weight:UIFontWeightBold];
+            button.titleLabel.font = [UIFont systemFontOfSize:8 weight:UIFontWeightBold];
             [button addTarget:self action:@selector(selectSection:) forControlEvents:UIControlEventTouchUpInside];
             button.hidden = YES;
             [self addSubview:button];
@@ -79,9 +79,7 @@
     self.frame = (CGRect){self.frame.origin, CGSizeMake(200, expanded ? 130 : 38)};
     self.layer.cornerRadius = expanded ? 15.0 : 19.0;
     self.detailsLabel.hidden = !expanded;
-    for (UIButton *button in self.sectionButtons) {
-        button.hidden = !expanded;
-    }
+    for (UIButton *button in self.sectionButtons) button.hidden = !expanded;
     [self.toggleButton setTitle:(expanded ? @"−" : @"+") forState:UIControlStateNormal];
     self.accessibilityValue = expanded ? @"Expanded" : @"Collapsed";
 }
@@ -90,30 +88,23 @@
     self.detailsLabel.text = text.length > 180 ? [[text substringToIndex:177] stringByAppendingString:@"…"] : text;
 }
 
-- (void)toggleExpanded {
-    self.expanded = !self.isExpanded;
-}
+- (void)toggleExpanded { self.expanded = !self.isExpanded; }
 
 - (void)selectSection:(UIButton *)sender {
-    if (self.onSectionSelected) {
-        self.onSectionSelected((EHMenuSection)sender.tag);
-    }
+    if (self.onSectionSelected) self.onSectionSelected((EHMenuSection)sender.tag);
 }
 
 - (void)handlePan:(UIPanGestureRecognizer *)gesture {
     UIView *container = self.superview;
     if (!container) return;
-
     CGPoint translation = [gesture translationInView:container];
     CGRect nextFrame = self.frame;
     nextFrame.origin.x += translation.x;
     nextFrame.origin.y += translation.y;
-
     CGFloat maxX = MAX(0, CGRectGetWidth(container.bounds) - CGRectGetWidth(nextFrame));
     CGFloat maxY = MAX(0, CGRectGetHeight(container.bounds) - CGRectGetHeight(nextFrame));
     nextFrame.origin.x = MIN(MAX(0, nextFrame.origin.x), maxX);
     nextFrame.origin.y = MIN(MAX(0, nextFrame.origin.y), maxY);
-
     self.frame = nextFrame;
     [gesture setTranslation:CGPointZero inView:container];
 }

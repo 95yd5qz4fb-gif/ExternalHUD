@@ -14,7 +14,8 @@ ExternalHUD_FILES := main.m \
 	System/EHDeviceInfo.m \
 	System/EHCompatibility.m \
 	Capabilities/EHCapabilityRegistry.m \
-	Diagnostics/EHDiagnostics.m
+	Diagnostics/EHDiagnostics.m \
+	Process/EHProcessManager.m
 
 ExternalHUD_FRAMEWORKS := UIKit Foundation QuartzCore
 ExternalHUD_CFLAGS := -fobjc-arc -Wall -Wextra

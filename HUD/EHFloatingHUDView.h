@@ -3,7 +3,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSInteger, EHMenuSection) {
-    EHMenuSectionEnvironment = 0,
+    EHMenuSectionProcesses = 0,
+    EHMenuSectionEnvironment,
     EHMenuSectionCapabilities,
     EHMenuSectionDiagnostics
 };

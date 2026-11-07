@@ -1,49 +1,35 @@
 # ExternalHUD
 
-ExternalHUD is a standalone iOS application built with Objective-C and Theos. The distributable build is an IPA intended for installation as an app (for example, through TrollStore on supported devices), not a jailbreak tweak package.
+ExternalHUD is a standalone iOS application. GitHub Actions produces an **IPA** (standard Payload/ExternalHUD.app layout), not a tweak package.
 
-## Product direction
+## Current app modules
 
-- Standalone app with a floating HUD and configurable menu.
-- Device, architecture, iOS version, and exact build detection.
-- Process-integration architecture with explicit capability and compatibility reporting.
-- Separate capability layers for kernel primitives, PAC, and PPL.
-- Clear distinction between detected, tested, supported, and unavailable capabilities.
+- UIKit application shell and draggable floating HUD.
+- Device, OS, build, and binary-slice detection.
+- Fail-closed compatibility evaluator.
+- Capability catalog with distinct Kernel, KFD, DarkSword, PAC, and PPL entries.
+- Local diagnostics.
+- Process session manager with an explicitly self-only first backend.
 
-## Current implementation status
+## Process integration status
 
-The current source contains the UIKit app shell, in-app HUD, device/environment detection, compatibility evaluator, descriptive capability registry, and app-local diagnostics. It does not yet contain a working process attachment backend or executable kernel exploit modules. The current build is an IPA shell; a green CI build proves compilation and packaging, not that process integration works on a physical device.
-
-## Architecture
-
-- Application/ — UIKit application lifecycle.
-- HUD/ — floating panel and menu UI.
-- System/ — device/OS detection and compatibility evaluation.
-- Capabilities/ — capability catalog and status model.
-- Diagnostics/ — local diagnostics.
-- Tests/ — compatibility test plan.
-- Scripts/ — CI validation.
+The Process Center currently creates and validates a session for ExternalHUD's own process. It does **not** enumerate or attach to other apps. External-process discovery and a kernel-backed attachment backend remain unimplemented; the UI reports this as unavailable rather than pretending a connection succeeded. The process manager is separated from the UI so a future, independently validated backend can be added without rewriting the HUD.
 
 ## Build
 
-Requires macOS, Xcode command-line tools, and Theos with an iPhoneOS SDK.
+Requires macOS, Xcode command-line tools, Theos, and an iPhoneOS SDK.
 
     make stage FINALPACKAGE=1
 
-The GitHub Actions workflow stages the app, wraps it in the standard Payload/ExternalHUD.app layout, and uploads ExternalHUD.ipa. The IPA is not code-signed by this workflow; installation/signing behavior depends on the installation method and target device.
+GitHub Actions stages the app, packages `Payload/ExternalHUD.app` into `ExternalHUD.ipa`, and uploads the IPA artifact. The workflow does not sign the IPA. Installation/signing depends on the target device and installation method.
 
-## Compatibility principles
+## Compatibility
 
-1. Unknown device/build combinations remain untested.
-2. Compatibility requires exact hardware, architecture, OS range, and tested build matching.
-3. Kernel, PAC, and PPL are distinct capability layers.
-4. Metadata must not be presented as proof that an exploit or primitive works.
-5. CI success is not a substitute for on-device runtime testing.
+Unknown device/build combinations remain untested. A compatibility result requires exact hardware identifier, binary slice, supported OS range, and exact tested build membership. CI success proves compile/package only, not runtime support on physical devices.
 
-## Process integration
+## Security and correctness
 
-The intended product direction includes process discovery and integration. The current repository does not yet implement a functioning arbitrary-process attachment backend. Any future backend must have a separately defined authorization model, compatibility matrix, and device test plan; the UI must not claim attachment success based only on device metadata.
-
-## License
-
-TBD. Third-party exploit code or binaries are not bundled by this repository.
+- No kernel exploit payloads or PAC/PPL bypass code are bundled.
+- No arbitrary task-port acquisition or cross-process memory operations are performed.
+- A process session is never reported as attached unless the current app's own task is the target.
+- Capability metadata is descriptive and is not proof of a working backend.
