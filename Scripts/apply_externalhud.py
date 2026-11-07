@@ -138,7 +138,7 @@ if "EHProcessListViewController" not in src:
         }],
 '''
     if action_marker not in src: raise SystemExit("Dopamine action menu insertion point not found")
-    src = src.replace(action_marker, ",\\n" + action + action_marker, 1)
+    src = src.replace(action_marker, ",\n" + action + action_marker, 1)
     MAIN.write_text(src)
 
 ent = ENT.read_text()
