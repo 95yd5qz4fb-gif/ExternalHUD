@@ -1,46 +1,49 @@
 # ExternalHUD
 
-ExternalHUD is an experimental, device-aware iOS HUD and diagnostics application built with Objective-C and Theos.
+ExternalHUD is a standalone iOS application built with Objective-C and Theos. The distributable build is an IPA intended for installation as an app (for example, through TrollStore on supported devices), not a jailbreak tweak package.
 
-## Project goals
+## Product direction
 
-- Provide an in-app floating HUD and configurable diagnostics menu.
-- Detect device model, CPU architecture, OS version, and build number.
-- Maintain a declarative compatibility catalog for optional system components.
-- Keep Kernel, PAC, and PPL capability metadata separate from the UI and diagnostics layers.
-- Prefer public APIs and explicit capability checks; fail closed when a capability is unavailable or unknown.
+- Standalone app with a floating HUD and configurable menu.
+- Device, architecture, iOS version, and exact build detection.
+- Process-integration architecture with explicit capability and compatibility reporting.
+- Separate capability layers for kernel primitives, PAC, and PPL.
+- Clear distinction between detected, tested, supported, and unavailable capabilities.
 
 ## Current implementation status
 
-This repository starts with the application shell, environment detection, compatibility metadata, and local diagnostics. The initial release does not execute kernel exploits, implement PAC/PPL bypasses, acquire task ports for unrelated processes, or read/write memory in other processes. Diagnostics are limited to the app itself and explicitly authorized test targets.
+The current source contains the UIKit app shell, in-app HUD, device/environment detection, compatibility evaluator, descriptive capability registry, and app-local diagnostics. It does not yet contain a working process attachment backend or executable kernel exploit modules. The current build is an IPA shell; a green CI build proves compilation and packaging, not that process integration works on a physical device.
 
 ## Architecture
 
-- `Application/` — UIKit application lifecycle and root screen.
-- `HUD/` — in-app floating panel and menu components.
-- `System/` — device/OS detection and compatibility model.
-- `Capabilities/` — descriptive Kernel/PAC/PPL capability registry; no exploit payload execution.
-- `Diagnostics/` — app-local runtime diagnostics.
-- `Resources/` — app metadata and assets.
+- Application/ — UIKit application lifecycle.
+- HUD/ — floating panel and menu UI.
+- System/ — device/OS detection and compatibility evaluation.
+- Capabilities/ — capability catalog and status model.
+- Diagnostics/ — local diagnostics.
+- Tests/ — compatibility test plan.
+- Scripts/ — CI validation.
 
 ## Build
 
 Requires macOS, Xcode command-line tools, and Theos with an iPhoneOS SDK.
 
-```sh
-make package FINALPACKAGE=1
-```
+    make stage FINALPACKAGE=1
 
-The initial target is arm64/arm64e and iOS 14.0+. The actual deployment range will be refined after compiling and testing against the supported SDKs and devices.
+The GitHub Actions workflow stages the app, wraps it in the standard Payload/ExternalHUD.app layout, and uploads ExternalHUD.ipa. The IPA is not code-signed by this workflow; installation/signing behavior depends on the installation method and target device.
 
-## Security and compatibility principles
+## Compatibility principles
 
-1. Unknown device/build combinations are unsupported by default.
-2. Compatibility entries must identify exact version/build ranges and architecture constraints.
-3. Never infer a successful capability from device model alone.
-4. Keep diagnostics read-only and scoped to this application unless a test target is explicitly configured.
-5. Do not silently fall back to private APIs or weaker security checks.
+1. Unknown device/build combinations remain untested.
+2. Compatibility requires exact hardware, architecture, OS range, and tested build matching.
+3. Kernel, PAC, and PPL are distinct capability layers.
+4. Metadata must not be presented as proof that an exploit or primitive works.
+5. CI success is not a substitute for on-device runtime testing.
+
+## Process integration
+
+The intended product direction includes process discovery and integration. The current repository does not yet implement a functioning arbitrary-process attachment backend. Any future backend must have a separately defined authorization model, compatibility matrix, and device test plan; the UI must not claim attachment success based only on device metadata.
 
 ## License
 
-TBD. Do not redistribute third-party exploit code or binaries through this repository.
+TBD. Third-party exploit code or binaries are not bundled by this repository.

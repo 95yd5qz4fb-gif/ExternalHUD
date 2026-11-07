@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fast CI guard for ExternalHUD's initial app-only security/compatibility scope."""
+"""CI checks for the standalone ExternalHUD IPA target and compatibility rules."""
 from pathlib import Path
 import re
 import sys
@@ -12,7 +12,6 @@ def require(condition, message):
         errors.append(message)
 
 makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
-control_text = (ROOT / "control").read_text(encoding="utf-8")
 workflow = (ROOT / ".github/workflows/build.yml").read_text(encoding="utf-8")
 
 required_sources = [
@@ -30,23 +29,18 @@ for source in required_sources:
 require("ARCHS := arm64 arm64e" in makefile, "Both arm64 and arm64e must remain build targets.")
 require("ExternalHUD_BUNDLE_IDENTIFIER := com.gira983.externalhud" in makefile,
         "Bundle identifier is missing or changed unexpectedly.")
-
-control = {}
-for line in control_text.splitlines():
-    if ":" in line:
-        key, value = line.split(":", 1)
-        control[key.strip()] = value.strip()
-for key in ("Package", "Name", "Version", "Architecture"):
-    require(bool(control.get(key)), f"Debian control field is missing: {key}")
-require(control.get("Package") == "com.gira983.externalhud",
-        "Debian package identifier must match the app bundle identifier.")
-require(control.get("Architecture") == "iphoneos-arm64",
-        "Unexpected Debian package architecture.")
-
+require("make stage FINALPACKAGE=1" in workflow,
+        "CI must stage the iOS application without producing a Debian package.")
+require("Payload/ExternalHUD.app" in workflow and "ExternalHUD.ipa" in workflow,
+        "CI must package the staged app in the standard IPA Payload layout.")
+require("path: dist/ExternalHUD.ipa" in workflow,
+        "CI must upload the IPA, not a Debian package.")
+require("packages/*.deb" not in workflow,
+        "The downloadable build artifact must not be a .deb package.")
 require("python3 Scripts/validate_project.py" in workflow,
         "CI must run the project invariant checks.")
-require("actions/upload-artifact@v4" in workflow and "packages/*.deb" in workflow,
-        "CI must upload the generated Debian package.")
+require("actions/upload-artifact@v4" in workflow,
+        "CI must upload the generated IPA.")
 
 compat = (ROOT / "System/EHCompatibility.m").read_text(encoding="utf-8")
 for invariant in (
@@ -59,7 +53,6 @@ for invariant in (
 ):
     require(invariant in compat, f"Compatibility invariant missing: {invariant}")
 
-# Initial product scope: no cross-process task acquisition or VM read/write APIs.
 blocked_apis = re.compile(
     r"\b(task_for_pid|task_name_for_pid|processor_set_tasks|"
     r"vm_read_overwrite|vm_write|mach_vm_read_overwrite|mach_vm_write)\s*\("
@@ -82,4 +75,4 @@ if errors:
         print(f" - {error}")
     sys.exit(1)
 
-print("ExternalHUD validation passed: source layout, package metadata, build slices, and fail-closed compatibility checks.")
+print("ExternalHUD validation passed: IPA workflow, app sources, architecture, and fail-closed compatibility checks.")

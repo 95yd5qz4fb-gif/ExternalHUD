@@ -1,4 +1,4 @@
-name: Build ExternalHUD
+name: Build ExternalHUD IPA
 
 on:
   push:
@@ -19,26 +19,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Validate project invariants
         run: python3 Scripts/validate_project.py
-
       - name: Cache Theos and SDKs
         uses: actions/cache@v4
         with:
           path: theos
           key: theos-${{ runner.os }}-sdk-master-v1
-
       - name: Set up Theos
         uses: Randomblock1/theos-action@v1.5
-
-      - name: Build package
-        run: make package FINALPACKAGE=1
-
-      - name: Upload package
+      - name: Build and stage iOS app
+        run: make stage FINALPACKAGE=1
+      - name: Package IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find .theos -type d -name 'ExternalHUD.app' -print -quit)"
+          if [ -z "$APP_PATH" ] || [ ! -f "$APP_PATH/Info.plist" ]; then
+            echo "ExternalHUD.app or its Info.plist was not produced by Theos staging."
+            find .theos -maxdepth 6 -print || true
+            exit 1
+          fi
+          mkdir -p dist/Payload
+          ditto "$APP_PATH" dist/Payload/ExternalHUD.app
+          cd dist
+          /usr/bin/zip -qry ExternalHUD.ipa Payload
+          test -s ExternalHUD.ipa
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Payload/ExternalHUD.app/Info.plist
+          echo "IPA created: $(pwd)/ExternalHUD.ipa"
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ExternalHUD-${{ github.sha }}
-          path: packages/*.deb
+          name: ExternalHUD-IPA-${{ github.sha }}
+          path: dist/ExternalHUD.ipa
           if-no-files-found: error
           retention-days: 14
