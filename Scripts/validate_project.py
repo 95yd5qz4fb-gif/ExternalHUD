@@ -10,7 +10,7 @@ for p in ["HUD/EHHomeViewController.m","HUD/EHFloatingHUDView.m","System/EHDevic
 req("ARCHS := arm64 arm64e" in mk,"arm64/arm64e targets missing")
 req("make stage FINALPACKAGE=1" in wf and "ExternalHUD.ipa" in wf,"IPA workflow missing")
 p=(R/"Process/EHProcessManager.m").read_text()
-for s in ["proc_listpids(PROC_ALL_PIDS","proc_pidinfo(","proc_pidpath(","task_for_pid(","mach_port_deallocate"]:
+for s in ["sysctl(mib, 4","KERN_PROC_ALL","kp_proc.p_pid","task_for_pid(","mach_port_deallocate"]:
  req(s in p,"Process feature missing: "+s)
 for s in ["vm_read","vm_write","mach_vm_read","mach_vm_write"]:
  req(s not in p,"Unexpected memory API: "+s)
@@ -19,4 +19,4 @@ for s in ["RUNNING PROCESSES","reloadProcesses","connectProcess:"]:
  req(s in u,"Process UI missing: "+s)
 if errors:
  print("Validation FAILED");[print(" - "+e) for e in errors];sys.exit(1)
-print("Validation passed: process enumeration, Mach task-port request, and IPA package.")
+print("Validation passed: iOS sysctl process enumeration, Mach task-port request, and IPA package.")
