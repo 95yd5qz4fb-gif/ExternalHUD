@@ -1,11 +1,11 @@
 # ExternalHUD
-Standalone iOS process manager distributed as an IPA.
 
-- Enumerates visible processes using libproc.
-- Displays PID, process name, bundle identifier when available, and executable path in the connection result.
-- Selecting a process requests a Mach task port through task_for_pid.
-- Reports Mach return codes when access is denied.
-- Holds an acquired task port for the session and deallocates it when the session is released.
-- Does not read or write process memory, inject code, or execute remote commands.
+Standalone iOS process manager based on the Dopamine 3.0.13 jailbreak codebase.
 
-Process visibility and task-port access depend on iOS version, jailbreak state, and application entitlements. A visible PID does not guarantee task_for_pid success. CI verifies compilation and packaging, not device-side permission.
+- Dopamine is pinned as a Git submodule at commit 5b1d2c1c3bf54dd8e3641d29c60cd3a0c13cde88 (tag 3.0.13).
+- The app retains Dopamine's jailbreak bootstrap and adds a local process browser.
+- Selecting a process requests and retains its Mach task port; this app does not read/write target memory or inject code.
+- No remote server or separate companion app is used.
+- Initial target: iPhone 12 (A14), iOS 16.7.12.
+
+GitHub Actions builds and uploads ExternalHUD.ipa. Dopamine license and attribution are retained in the submodule.
