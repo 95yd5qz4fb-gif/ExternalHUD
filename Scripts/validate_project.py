@@ -68,3 +68,12 @@ if errors:
     for error in errors: print(f" - {error}")
     sys.exit(1)
 print("ExternalHUD validation passed: IPA target, process-session invariants, sources, and compatibility checks.")
+
+# User-facing controls and live diagnostics must remain wired into the app.
+home = (ROOT / "HUD/EHHomeViewController.m").read_text(encoding="utf-8")
+for feature in ("VERIFY SELF SESSION", "COPY REPORT", "refreshDashboard:", "copyDiagnosticReport", "verifySelfSession"):
+    require(feature in home, f"Dashboard interaction is missing: {feature}")
+diag = (ROOT / "Diagnostics/EHDiagnostics.m").read_text(encoding="utf-8")
+for metric in ('"App CPU"', '"Battery"', '"Thermal state"', '"App memory footprint"'):
+    require(metric in diag, f"Live diagnostic metric is missing: {metric}")
+require((ROOT / "Tests/AuthorizedTarget/README.md").is_file(), "Authorized target integration contract is missing.")
