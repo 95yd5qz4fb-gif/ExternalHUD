@@ -34,6 +34,7 @@ if "EHProcessListViewController" not in src:
 @property(nonatomic, strong) NSArray<EHProcessItem *> *processes;
 @property(nonatomic, copy) NSString *connectedProcess;
 @property(nonatomic, assign) BOOL kernelReady;
+@property(nonatomic, copy) NSString *emptyMessage;
 @end
 
 @implementation EHProcessListViewController
@@ -42,7 +43,16 @@ if "EHProcessListViewController" not in src:
     static dispatch_once_t onceToken;
     static int initResult = -1;
     dispatch_once(&onceToken, ^{
-        initResult = jbclient_initialize_primitives();
+        BOOL acquiredRoot = NO;
+        if (getuid() != 0) {
+            acquiredRoot = (jbclient_dopamine_get_root() == 1 && getuid() == 0);
+        }
+        if (getuid() == 0) {
+            initResult = jbclient_initialize_primitives();
+            if (acquiredRoot) jbclient_dopamine_drop_root();
+        } else {
+            initResult = -2;
+        }
     });
     self.kernelReady = (initResult == 0);
     return self.kernelReady;
@@ -63,10 +73,29 @@ if "EHProcessListViewController" not in src:
     [self reloadProcesses];
 }
 
+- (void)updateEmptyState {
+    if (self.processes.count > 0) {
+        self.tableView.backgroundView = nil;
+        return;
+    }
+    UILabel *label = [[UILabel alloc] initWithFrame:self.tableView.bounds];
+    label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    label.text = self.emptyMessage ?: @"No processes found";
+    label.textColor = [UIColor secondaryLabelColor];
+    label.textAlignment = NSTextAlignmentCenter;
+    label.numberOfLines = 0;
+    label.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+    self.tableView.backgroundView = label;
+}
+
 - (void)reloadProcesses {
     if (![self initializeKernelBackend]) {
         self.processes = @[];
-        self.navigationItem.prompt = @"Kernel primitives unavailable";
+        self.emptyMessage = (getuid() == 0)
+            ? @"Kernel primitives could not be initialized.\nCheck Dopamine jailbreak services."
+            : @"Root access unavailable.\nOpen ExternalHUD from the jailbroken Dopamine environment.";
+        self.navigationItem.prompt = @"Kernel backend unavailable";
+        [self updateEmptyState];
         [self.tableView reloadData];
         return;
     }
@@ -93,6 +122,8 @@ if "EHProcessListViewController" not in src:
         return [a.name localizedCaseInsensitiveCompare:b.name];
     }];
     self.processes = items;
+    self.emptyMessage = items.count ? nil : @"Kernel backend initialized, but proc_iterate returned no processes.";
+    [self updateEmptyState];
     self.navigationItem.prompt = self.connectedProcess.length
         ? [NSString stringWithFormat:@"Kernel task resolved: %@", self.connectedProcess]
         : [NSString stringWithFormat:@"Kernel proc traversal · %lu processes", (unsigned long)items.count];
