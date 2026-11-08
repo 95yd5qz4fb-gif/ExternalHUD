@@ -18,7 +18,7 @@ if "EHProcessListViewController" not in src:
         '#import <stdlib.h>'
     )
     marker = "@interface DOMainViewController ()"
-    process_ui = r    process_ui = r'''
+    process_ui = r'''
 @interface EHProcessItem : NSObject
 @property(nonatomic, assign) pid_t pid;
 @property(nonatomic, copy) NSString *name;
@@ -175,4 +175,4 @@ INFO.write_text(info)
 
 pbx = PBX.read_text().replace("com.opa334.Dopamine", "com.gira983.ExternalHUD")
 PBX.write_text(pbx)
-print("ExternalHUD now enumerates proc objects and resolves task objects through Dopamine kernel helpers.")
+print("ExternalHUD process metadata mode configured; no kernel exploit backend is invoked.")
