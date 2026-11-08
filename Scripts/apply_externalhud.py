@@ -13,8 +13,8 @@ src = MAIN.read_text()
 if "EHProcessListViewController" not in src:
     src = src.replace(
         '#import <libjailbreak/libjailbreak.h>',
-        '#import <libproc.h>\\n'
-        '#import <dispatch/dispatch.h>\\n'
+        '#import <libproc.h>\n'
+        '#import <dispatch/dispatch.h>\n'
         '#import <stdlib.h>'
     )
     marker = "@interface DOMainViewController ()"
