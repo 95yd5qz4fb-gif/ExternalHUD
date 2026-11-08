@@ -13,50 +13,25 @@ src = MAIN.read_text()
 if "EHProcessListViewController" not in src:
     src = src.replace(
         '#import <libjailbreak/libjailbreak.h>',
-        '#import <libjailbreak/libjailbreak.h>\n'
-        '#import <libjailbreak/kernel.h>\n'
-        '#import <libjailbreak/primitives.h>\n'
-        '#import <libjailbreak/util.h>\n'
-        '#import <libproc.h>\n'
+        '#import <libproc.h>\\n'
         '#import <dispatch/dispatch.h>'
     )
     marker = "@interface DOMainViewController ()"
-    process_ui = r'''
+    process_ui = r    process_ui = r'''
 @interface EHProcessItem : NSObject
 @property(nonatomic, assign) pid_t pid;
 @property(nonatomic, copy) NSString *name;
 @property(nonatomic, copy) NSString *path;
+@property(nonatomic, copy) NSString *status;
 @end
 @implementation EHProcessItem
 @end
 
 @interface EHProcessListViewController : UITableViewController
 @property(nonatomic, strong) NSArray<EHProcessItem *> *processes;
-@property(nonatomic, copy) NSString *connectedProcess;
-@property(nonatomic, assign) BOOL kernelReady;
-@property(nonatomic, copy) NSString *emptyMessage;
 @end
 
 @implementation EHProcessListViewController
-
-- (BOOL)initializeKernelBackend {
-    static dispatch_once_t onceToken;
-    static int initResult = -1;
-    dispatch_once(&onceToken, ^{
-        BOOL acquiredRoot = NO;
-        if (getuid() != 0) {
-            acquiredRoot = (jbclient_dopamine_get_root() == 0 && getuid() == 0);
-        }
-        if (getuid() == 0) {
-            initResult = jbclient_initialize_primitives();
-            if (acquiredRoot) jbclient_dopamine_drop_root();
-        } else {
-            initResult = -2;
-        }
-    });
-    self.kernelReady = (initResult == 0);
-    return self.kernelReady;
-}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -73,60 +48,62 @@ if "EHProcessListViewController" not in src:
     [self reloadProcesses];
 }
 
-- (void)updateEmptyState {
-    if (self.processes.count > 0) {
-        self.tableView.backgroundView = nil;
-        return;
-    }
-    UILabel *label = [[UILabel alloc] initWithFrame:self.tableView.bounds];
-    label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    label.text = self.emptyMessage ?: @"No processes found";
-    label.textColor = [UIColor secondaryLabelColor];
-    label.textAlignment = NSTextAlignmentCenter;
-    label.numberOfLines = 0;
-    label.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
-    self.tableView.backgroundView = label;
-}
-
 - (void)reloadProcesses {
-    if (![self initializeKernelBackend]) {
-        self.processes = @[];
-        self.emptyMessage = (getuid() == 0)
-            ? @"Kernel primitives could not be initialized.\nCheck Dopamine jailbreak services."
-            : @"Root access unavailable.\nOpen ExternalHUD from the jailbroken Dopamine environment.";
-        self.navigationItem.prompt = @"Kernel backend unavailable";
-        [self updateEmptyState];
-        [self.tableView reloadData];
-        return;
+    NSMutableArray<EHProcessItem *> *items = [NSMutableArray array];
+    int capacity = 2048;
+    pid_t *pids = calloc((size_t)capacity, sizeof(pid_t));
+    if (pids) {
+        int bytes = proc_listallpids(pids, capacity * (int)sizeof(pid_t));
+        if (bytes > 0) {
+            int count = MIN(bytes / (int)sizeof(pid_t), capacity);
+            for (int i = 0; i < count; i++) {
+                pid_t pid = pids[i];
+                if (pid <= 0) continue;
+                char nameBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
+                char pathBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
+                proc_name(pid, nameBuffer, sizeof(nameBuffer));
+                int pathResult = proc_pidpath(pid, pathBuffer, sizeof(pathBuffer));
+                EHProcessItem *item = [EHProcessItem new];
+                item.pid = pid;
+                item.name = nameBuffer[0] ? [NSString stringWithUTF8String:nameBuffer]
+                                          : [NSString stringWithFormat:@"pid-%d", pid];
+                item.path = pathResult > 0 && pathBuffer[0] ? [NSString stringWithUTF8String:pathBuffer] : @"";
+                item.status = pid == getpid() ? @"This app" : @"Visible process metadata";
+                [items addObject:item];
+            }
+        }
+        free(pids);
     }
 
-    NSMutableArray<EHProcessItem *> *items = [NSMutableArray array];
-    proc_iterate(^(uint64_t kernelProc, bool *stop) {
-        pid_t pid = (pid_t)kread32(kernelProc + koffsetof(proc, pid));
-        if (pid <= 0) return;
-
-        char nameBuffer[256] = {0};
-        char pathBuffer[4096] = {0};
-        proc_name(pid, nameBuffer, sizeof(nameBuffer));
-        proc_pidpath(pid, pathBuffer, sizeof(pathBuffer));
-
+    if (items.count == 0) {
         EHProcessItem *item = [EHProcessItem new];
-        item.pid = pid;
-        item.name = nameBuffer[0] ? [NSString stringWithUTF8String:nameBuffer]
-                                  : [NSString stringWithFormat:@"pid-%d", pid];
-        item.path = pathBuffer[0] ? [NSString stringWithUTF8String:pathBuffer] : @"";
+        item.pid = getpid();
+        item.name = [NSString stringWithUTF8String:getprogname() ?: "ExternalHUD"];
+        char pathBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
+        int pathResult = proc_pidpath(getpid(), pathBuffer, sizeof(pathBuffer));
+        item.path = pathResult > 0 ? [NSString stringWithUTF8String:pathBuffer] : @"";
+        item.status = @"Current app only";
         [items addObject:item];
-    });
+        UILabel *label = [[UILabel alloc] initWithFrame:self.tableView.bounds];
+        label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        label.text = @"iOS did not expose a process list. Showing ExternalHUD only.\\nOther apps' task objects and memory are not accessible to a normal app.";
+        label.textColor = [UIColor secondaryLabelColor];
+        label.textAlignment = NSTextAlignmentCenter;
+        label.numberOfLines = 0;
+        label.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+        self.tableView.backgroundView = label;
+    } else {
+        self.tableView.backgroundView = nil;
+    }
 
     [items sortUsingComparator:^NSComparisonResult(EHProcessItem *a, EHProcessItem *b) {
+        if (a.pid == getpid()) return NSOrderedAscending;
+        if (b.pid == getpid()) return NSOrderedDescending;
         return [a.name localizedCaseInsensitiveCompare:b.name];
     }];
     self.processes = items;
-    self.emptyMessage = items.count ? nil : @"Kernel backend initialized, but proc_iterate returned no processes.";
-    [self updateEmptyState];
-    self.navigationItem.prompt = self.connectedProcess.length
-        ? [NSString stringWithFormat:@"Kernel task resolved: %@", self.connectedProcess]
-        : [NSString stringWithFormat:@"Kernel proc traversal · %lu processes", (unsigned long)items.count];
+    self.navigationItem.prompt = [NSString stringWithFormat:
+        @"Stock iOS process API · %lu visible · metadata only", (unsigned long)items.count];
     [self.tableView reloadData];
 }
 
@@ -141,8 +118,8 @@ if "EHProcessListViewController" not in src:
     EHProcessItem *item = self.processes[indexPath.row];
     cell.textLabel.text = item.name;
     cell.detailTextLabel.text = item.path.length
-        ? [NSString stringWithFormat:@"PID %d  ·  %@", item.pid, item.path]
-        : [NSString stringWithFormat:@"PID %d", item.pid];
+        ? [NSString stringWithFormat:@"PID %d · %@\\n%@", item.pid, item.status, item.path]
+        : [NSString stringWithFormat:@"PID %d · %@", item.pid, item.status];
     cell.detailTextLabel.numberOfLines = 2;
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     return cell;
@@ -151,40 +128,10 @@ if "EHProcessListViewController" not in src:
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     EHProcessItem *item = self.processes[indexPath.row];
-
-    if (![self initializeKernelBackend]) {
-        [self showConnectionResult:@"Kernel backend unavailable" detail:@"Dopamine kernel primitives could not be initialized."];
-        return;
-    }
-
-    // Resolve both XNU objects through Dopamine's kernel-backed helpers.
-    // The raw kernel address is deliberately not exposed to UI or persisted.
-    uint64_t kernelProc = proc_find(item.pid);
-    if (!kernelProc) {
-        [self showConnectionResult:@"Kernel lookup failed"
-                            detail:[NSString stringWithFormat:@"proc_find(%d) returned NULL. The process may have exited.", item.pid]];
-        return;
-    }
-
-    uint64_t kernelTask = proc_task(kernelProc);
-    proc_rele(kernelProc);
-
-    if (!kernelTask) {
-        [self showConnectionResult:@"Kernel task lookup failed"
-                            detail:[NSString stringWithFormat:@"proc_task for PID %d returned NULL.", item.pid]];
-        return;
-    }
-
-    self.connectedProcess = [NSString stringWithFormat:@"%@ (PID %d)", item.name, item.pid];
-    self.navigationItem.prompt = [NSString stringWithFormat:@"Kernel task resolved: %@", self.connectedProcess];
-    [self showConnectionResult:@"Kernel task resolved"
-                        detail:[NSString stringWithFormat:
-                            @"Dopamine proc_find() and proc_task() both succeeded for %@. This is a kernel task object, not a Mach task port.",
-                            self.connectedProcess]];
-}
-
-- (void)showConnectionResult:(NSString *)title detail:(NSString *)detail {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+    NSString *detail = [NSString stringWithFormat:
+        @"Selected %@ (PID %d).\\n\\nExternalHUD can show process metadata exposed by stock iOS. It cannot acquire arbitrary Mach task ports, kernel task objects, or inspect another app's memory on a normal iOS installation.",
+        item.name, item.pid];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Process selected"
                                                                    message:detail
                                                             preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
@@ -192,7 +139,6 @@ if "EHProcessListViewController" not in src:
 }
 
 @end
-
 '''
     if marker not in src:
         raise SystemExit("DOMainViewController insertion point not found")
