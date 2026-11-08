@@ -45,7 +45,7 @@ if "EHProcessListViewController" not in src:
     dispatch_once(&onceToken, ^{
         BOOL acquiredRoot = NO;
         if (getuid() != 0) {
-            acquiredRoot = (jbclient_dopamine_get_root() == 1 && getuid() == 0);
+            acquiredRoot = (jbclient_dopamine_get_root() == 0 && getuid() == 0);
         }
         if (getuid() == 0) {
             initResult = jbclient_initialize_primitives();
