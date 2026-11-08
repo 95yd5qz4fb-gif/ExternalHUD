@@ -14,7 +14,8 @@ if "EHProcessListViewController" not in src:
     src = src.replace(
         '#import <libjailbreak/libjailbreak.h>',
         '#import <libproc.h>\\n'
-        '#import <dispatch/dispatch.h>'
+        '#import <dispatch/dispatch.h>\\n'
+        '#import <stdlib.h>'
     )
     marker = "@interface DOMainViewController ()"
     process_ui = r    process_ui = r'''
@@ -55,7 +56,7 @@ if "EHProcessListViewController" not in src:
     if (pids) {
         int bytes = proc_listallpids(pids, capacity * (int)sizeof(pid_t));
         if (bytes > 0) {
-            int count = MIN(bytes / (int)sizeof(pid_t), capacity);
+            int count = MIN(bytes, capacity);
             for (int i = 0; i < count; i++) {
                 pid_t pid = pids[i];
                 if (pid <= 0) continue;
@@ -78,7 +79,8 @@ if "EHProcessListViewController" not in src:
     if (items.count == 0) {
         EHProcessItem *item = [EHProcessItem new];
         item.pid = getpid();
-        item.name = [NSString stringWithUTF8String:getprogname() ?: "ExternalHUD"];
+        const char *programName = getprogname();
+        item.name = [NSString stringWithUTF8String:programName ? programName : "ExternalHUD"];
         char pathBuffer[PROC_PIDPATHINFO_MAXSIZE] = {0};
         int pathResult = proc_pidpath(getpid(), pathBuffer, sizeof(pathBuffer));
         item.path = pathResult > 0 ? [NSString stringWithUTF8String:pathBuffer] : @"";
